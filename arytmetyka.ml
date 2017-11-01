@@ -1,10 +1,3 @@
-(******************************************************
-*******************************************************
-             Autor:                                    
-             Code review:                              
-*******************************************************
-******************************************************)
-
 type wartosc = (float * float) list
 
 (***********************
@@ -125,26 +118,3 @@ let podzielic x y =
 	in match y with
 	| [] -> x
 	| _ -> dziel x y x []
-
-(*
-Trudniejsze testy
-min_wartosc ( podzielic ( wartosc_dokladna (-0.600000) ) ( razy ( podzielic ( podzielic ( wartosc_od_do (-4.000000) (0.000000) ) ( wartosc_dokladna (0.000000) ) ) ( wartosc_od_do (-4.400000) (-2.400000) ) ) ( minus ( wartosc_dokladna (0.000000) ) ( podzielic ( wartosc_od_do (-4.800000) (6.600000) ) ( wartosc_dokladna (-2.600000) ) ) ) ) ) ;;
-
-razy ( podzielic ( podzielic ( wartosc_od_do (-4.000000) (0.000000) ) ( wartosc_dokladna (0.000000) ) ) ( wartosc_od_do (-4.400000) (-2.400000) ) ) ( minus ( wartosc_dokladna (0.000000) ) ( podzielic ( wartosc_od_do (-4.800000) (6.600000) ) ( wartosc_dokladna (-2.600000) ) ) );;
-
-let v1 = podzielic ( podzielic ( wartosc_od_do (-4.000000) (0.000000) ) ( wartosc_dokladna (0.000000) ) ) ( wartosc_od_do (-4.400000) (-2.400000) );;
-let v2 = minus ( wartosc_dokladna (0.000000) ) ( podzielic ( wartosc_od_do (-4.800000) (6.600000) ) ( wartosc_dokladna (-2.600000)) );;
-
-
-razy v1 v2;;
-
-in_wartosc ( razy ( podzielic ( wartosc_od_do (-10.000000) (-8.000000) ) ( wartosc_dokladna (0.000000) ) ) ( wartosc_od_do (-9.000000) (7.000000) ) ) (-5.000000);;
-
-let v3 = podzielic ( wartosc_od_do (-10.000000) (-8.000000) ) ( wartosc_dokladna (0.000000) );;
-let v4 = wartosc_od_do (-9.000000) (7.000000);;
-
-razy v3 v4;;
-
-in_wartosc ( razy ( podzielic ( wartosc_od_do (-9.000000) (7.000000) ) ( wartosc_dokladna (0.000000) ) ) ( wartosc_od_do (0.000000) (0.000000) ) ) (0.000000);;
-in_wartosc ( razy ( podzielic ( wartosc_od_do (-9.000000) (-2.000000) ) ( wartosc_dokladnosc (0.000000) (4.000000) ) ) ( razy ( wartosc_dokladnosc (3.000000) (4.000000) ) ( wartosc_dokladnosc (0.000000) (0.000000) ) ) ) (0.000000);;
-*)
