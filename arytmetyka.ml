@@ -46,26 +46,18 @@ let sr_wartosc x = ((min_wartosc x)+.(max_wartosc x))/.2.
          OPERACJE       
 ***********************)
 
-let operuj op x y =
+let operuj op x y czy_dziel=
 	let rec oper x y z wyn =
 		match x, y with
 		| _, [] -> wyn
 		| [], _::t -> oper z t z wyn
+		| _::tx, (a,b)::_ when a = 0. && b = 0. && czy_dziel -> oper tx y z (przedzial nan nan wyn)
 		| (ax,bx)::tx, (a,b)::_ -> oper tx y z (przedzial (comp min (op ax a) (op ax b) (op bx a) (op bx b)) (comp max (op ax a) (op ax b) (op bx a) (op bx b)) wyn)
 	in match y with
 	| [] -> x
 	| _ -> oper x y x []
 
-let plus x y = operuj ( +. ) x y
-let minus x y = operuj ( -. ) x y
-let razy x y = operuj ( *. ) x y
-let podzielic x y =
-	let rec oper x y z wyn =
-		match x, y with
-		| _, [] -> wyn
-		| [], _::t -> oper z t z wyn
-		| _::tx, (a,b)::_ when a = 0. && b = 0. -> oper tx y z (przedzial nan nan wyn)
-		| (ax,bx)::tx, (a,b)::_ -> oper tx y z (przedzial (comp min ( ( /. ) ax a) (( /. ) ax b) (( /. ) bx a) (( /. ) bx b)) (comp max (( /. ) ax a) (( /. ) ax b) (( /. ) bx a) (( /. ) bx b)) wyn)
-	in match y with
-	| [] -> x
-	| _ -> oper x y x [] 
+let plus x y = operuj ( +. ) x y false
+let minus x y = operuj ( -. ) x y false
+let razy x y = operuj ( *. ) x y false
+let podzielic x y = operuj ( /. ) x y true
