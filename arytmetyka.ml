@@ -34,9 +34,10 @@ let rec in_wartosc x y =
 	| [] -> false
 	| (a,b)::t -> if y >= a && y <= b then true else in_wartosc t y
 
-let rec some_wartosc f x wyn = match x with
-				| [] -> wyn
-				| (a,b)::t -> some_wartosc f t (f a (f b wyn))
+let rec some_wartosc f x wyn =
+	match x with
+	| [] -> wyn
+	| (a,b)::t -> some_wartosc f t (f a (f b wyn))
 
 let max_wartosc x = some_wartosc max x nan
 let min_wartosc x = some_wartosc min x nan
