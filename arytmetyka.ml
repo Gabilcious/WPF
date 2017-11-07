@@ -1,5 +1,9 @@
 type wartosc = (float * float) list
 
+(***********************
+       POMOCNICZE       
+***********************)
+
 let toNan a = not (a <= infinity && a >= neg_infinity)
 let min a b = if toNan a then b else if toNan b then a else if a < b then a else b;;
 let max a b = if toNan a then b else if toNan b then a else if a > b then a else b;;
@@ -13,9 +17,17 @@ let rec przedzial x y wyn =
 	else if x*.y >= 0. then (x,y)::wyn
 	else (x,-0.)::((0.,y)::wyn)
 
+(***********************
+      KONSTRUKTORY      
+***********************)
+
 let wartosc_dokladnosc x p = przedzial (x-.(p/.100.*.x)) (x+.(p/.100.*.x)) []
 let wartosc_od_do x y = przedzial x y []
 let wartosc_dokladna x = przedzial x x []
+
+(***********************
+        SELEKTORY       
+***********************)
 
 let rec in_wartosc x y =
 	match x with
@@ -30,12 +42,16 @@ let max_wartosc x = some_wartosc max x nan
 let min_wartosc x = some_wartosc min x nan
 let sr_wartosc x = ((min_wartosc x)+.(max_wartosc x))/.2.
 
+(***********************
+         OPERACJE       
+***********************)
+
 let operuj op x y =
 	let rec oper x y z wyn =
 		match x, y with
 		| _, [] -> wyn
 		| [], _::t -> oper z t z wyn
-		| (ax,bx)::tx, (a,b)::_ -> oper tx y z (przedzial (comp min (op ax a) (op ax b) (op bx a) (op bx b)) (comp min (op ax a) (op ax b) (op bx a) (op bx b)) wyn)
+		| (ax,bx)::tx, (a,b)::_ -> oper tx y z (przedzial (comp min (op ax a) (op ax b) (op bx a) (op bx b)) (comp max (op ax a) (op ax b) (op bx a) (op bx b)) wyn)
 	in match y with
 	| [] -> x
 	| _ -> oper x y x []
@@ -43,4 +59,13 @@ let operuj op x y =
 let plus x y = operuj ( +. ) x y
 let minus x y = operuj ( -. ) x y
 let razy x y = operuj ( *. ) x y
-let podzielic x y = operuj ( /. ) x y
+let podzielic x y =
+	let rec oper x y z wyn =
+		match x, y with
+		| _, [] -> wyn
+		| [], _::t -> oper z t z wyn
+		| _::tx, (a,b)::_ when a = 0. && b = 0. -> oper tx y z (przedzial nan nan wyn)
+		| (ax,bx)::tx, (a,b)::_ -> oper tx y z (przedzial (comp min ( ( /. ) ax a) (( /. ) ax b) (( /. ) bx a) (( /. ) bx b)) (comp max (( /. ) ax a) (( /. ) ax b) (( /. ) bx a) (( /. ) bx b)) wyn)
+	in match y with
+	| [] -> x
+	| _ -> oper x y x [] 
