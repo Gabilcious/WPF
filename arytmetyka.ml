@@ -1,10 +1,9 @@
 type wartosc = (float * float) list
 
-(***********************
-       POMOCNICZE       
-***********************)
-
 let toNan a = not (a <= infinity && a >= neg_infinity)
+let min a b = if toNan a then b else if toNan b then a else if a < b then a else b;;
+let max a b = if toNan a then b else if toNan b then a else if a > b then a else b;;
+let comp f a b c d = f (f a b) (f c d)
 
 let rec przedzial x y wyn =
 	if toNan x || toNan y then (x,y)::wyn
@@ -14,74 +13,34 @@ let rec przedzial x y wyn =
 	else if x*.y >= 0. then (x,y)::wyn
 	else (x,-0.)::((0.,y)::wyn)
 
-let min a b = if toNan a then b else if toNan b then a else if a < b then a else b;;
-let max a b = if toNan a then b else if toNan b then a else if a > b then a else b;;
-
-let minimum a b c d = min (min a b) (min c d)
-let maximum a b c d = max (max a b) (max c d)
-
-let mn x y = 
-	match x, y with
-	|x, y when ((x = infinity) || x = neg_infinity) && (y = 0. || y = -0.) -> 0.
-	|y, x when ((x = infinity) || x = neg_infinity) && (y = 0. || y = -0.) -> 0.
-	|x, y -> x*.y
-
-let dz x y = if y = 0 then nan else x /. y 
-
-(***********************
-      KONSTRUKTORY      
-***********************)
-
 let wartosc_dokladnosc x p = przedzial (x-.(p/.100.*.x)) (x+.(p/.100.*.x)) []
 let wartosc_od_do x y = przedzial x y []
 let wartosc_dokladna x = przedzial x x []
 
-(***********************
-        SELEKTORY       
-***********************)
-
 let rec in_wartosc x y =
 	match x with
-		| [] -> false
-		| (a,b)::t -> if y >= a && y <= b
-				then true
-				else in_wartosc t y
+	| [] -> false
+	| (a,b)::t -> if y >= a && y <= b then true else in_wartosc t y
 
-let max_wartosc x =
-	let rec maks x wyn =
-		match x with
-			| [] -> wyn
-			| (_,b)::t -> maks t (max b wyn)
-	in match x with
-		| [] -> infinity
-		| _ -> maks x neg_infinity
+let rec some_wartosc f x wyn = match x with
+				| [] -> wyn
+				| (a,b)::t -> some_wartosc f t (f a (f b wyn))
 
-let min_wartosc x =
-	let rec mini x wyn =
-		match x with
-			| [] -> wyn
-			| (a,_)::t -> mini t (min wyn a)
-	in match x with
-		| [] -> neg_infinity
-		| _ -> mini x infinity
-
+let max_wartosc x = some_wartosc max x nan
+let min_wartosc x = some_wartosc min x nan
 let sr_wartosc x = ((min_wartosc x)+.(max_wartosc x))/.2.
 
-(***********************
-         OPERACJE       
-***********************)
-
-let operacja x y opr =
-	let rec operuj x y z wyn =
+let operuj op x y =
+	let rec oper x y z wyn =
 		match x, y with
 		| _, [] -> wyn
-		| [], _::t -> operuj z t z wyn
-		| (ax,bx)::tx, (a,b)::_ -> operuj tx y z (przedzial (opr ax a) (opr bx b) wyn)
+		| [], _::t -> oper z t z wyn
+		| (ax,bx)::tx, (a,b)::_ -> oper tx y z (przedzial (comp min (op ax a) (op ax b) (op bx a) (op bx b)) (comp min (op ax a) (op ax b) (op bx a) (op bx b)) wyn)
 	in match y with
 	| [] -> x
-	| _ -> operuj x y x []
+	| _ -> oper x y x []
 
-let plus x y = operacja x y ( +. )
-let minus x y = operacja x y ( -. )
-let razy x y = operacja x y mn
-let podzielic x y = operacja x y dz
+let plus x y = operuj ( +. ) x y
+let minus x y = operuj ( -. ) x y
+let razy x y = operuj ( *. ) x y
+let podzielic x y = operuj ( /. ) x y
