@@ -1,7 +1,7 @@
 type t =
-    |Empty
-    |Node of t * (int * int) * t * (int * int)
-(* lewe poddrzewo * przedział w wierzchołku * prawe poddrzewo * wysokość i ilosc elementów  *)
+    | Empty
+    | Node of t * (int * int) * t * (int * int)
+(* lewe poddrzewo * przedział w wierzchołku * prawe poddrzewo * wysokość i ilosc elementów *)
 
 (***********************
        POMOCNICZE       
@@ -29,7 +29,7 @@ let add_num a b =
 (* dodawanie, aby nigdy nie przekroczyć wartości min_int i max_int *)
 
 let make l ((a, b) as k) r = Node (l, k, r, (max (height l) (height r) + 1,
-                      add_num (add_num (count l) (count r)) (add_num (add_num b (-a))  1)) )
+    add_num (add_num (count l) (count r)) (add_num (add_num b (-a))  1)) )
 
 let bal l k r =
     let hl = height l in
@@ -81,7 +81,7 @@ let rec add_one x = function
             let nr = add_one x r in
             bal l k nr
     | Empty -> make Empty x Empty
-(* nigdy nie będzie c = 0, ponieważ usuwamy nachodzące przedziały przed wywołaniem *)
+(* nigdy nie będzie c = 0, bo usuwamy nachodzące przedziały przed wywołaniem *)
 
 let rec remove_interval (a, b) = function
     | Node (l, (ka, kb), r, _) ->
@@ -93,12 +93,13 @@ let rec remove_interval (a, b) = function
             then ((min a ka, max b kb), merge l r)
             else ((a, b), bal l (ka, kb) r)
     | Empty -> ((a, b), Empty)
-(* usuwam wszystkie przedziały, które nachodzą  *)
+(* usuwam wszystkie przedziały, które będą nachodzić na przedział po dodaniu *)
 
 let rec add_acc x set =
     let (x, set) = (remove_interval x set) in
     add_one x set
-(* pomocnicze dodawanie, aby zachować porządek w kodzie: najpierw usuwam przedziały nachodzące, następnie dodaje konkretny przedzial *)
+(* pomocnicze dodawanie, aby zachować porządek w kodzie:
+najpierw usuwam przedziały nachodzące, następnie dodaje konkretny przedzial *)
 
 let rec join l v r =
     match (l, r) with
@@ -175,6 +176,8 @@ let remove ((a,b) as x) set =
             else if c < 0 then bal (loop l) k r else bal l k (loop r)
         | Empty -> Empty in
     loop set
+(* usuwam wsyzstkie przedziały, w przedziale do usunięcia i dodaje z powrotem te kawałki,
+które pozostaną po usunięciu części przedziału *)
 
 let iter f set =
     let rec loop = function
