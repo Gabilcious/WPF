@@ -33,7 +33,7 @@ let add_num2 a b czy_min_int =
         if a >= -2 then max_int
         else -(min_int - a )
     else add_num a b
-(* osobna funckja na dodawanie uwzględniająca min_int != max_int *)
+(* osobna funckja na dodawanie uwzględniająca, że min_int != max_int *)
 
 let make l ((a, b) as k) r = Node (l, k, r, (max (height l) (height r) + 1,
     add_num (add_num (count l) (count r)) (add_num (add_num2 b (-a) (a = min_int))  1)) )
@@ -67,55 +67,52 @@ let rec min_elt = function
     | Empty -> raise Not_found
 
 let rec remove_min_elt = function
-    | Node (Empty, _, r, _) -> r
-    | Node (l, k, r, _) -> bal (remove_min_elt l) k r
+    | Node (Empty, (_,b), r, _) -> b, r
+    | Node (l, k, r, _) -> let (x, set) = remove_min_elt l in x, bal set k r
     | Empty -> invalid_arg "PSet.remove_min_elt"
+
+let rec remove_max_elt = function
+    | Node (l, (a,_), Empty, _) -> a, l
+    | Node (l, k, r, _) -> let (x, set) = remove_max_elt r in x, bal set k l
+    | Empty -> invalid_arg "PSet.remove_max_elt"
 
 let merge t1 t2 =
     match t1, t2 with
     | Empty, _ -> t2
     | _, Empty -> t1
     | _ -> let k = min_elt t2 in
-           bal t1 k (remove_min_elt t2)
-
-let rec add_one x = function
-    | Node (l, k, r, _) ->
-        let c = cmp x k in
-        if c < 0 then
-            let nl = add_one x l in
-            bal nl k r
-        else
-            let nr = add_one x r in
-            bal l k nr
-    | Empty -> make Empty x Empty
-(* nigdy nie będzie c = 0, bo usuwamy nachodzące przedziały przed wywołaniem *)
-
-let rec remove_interval (a, b) = function
-    | Node (l, (ka, kb), r, _) ->
-        let (a, b), l = if a < ka then remove_interval (a, b) l
-            else (a, b), l in
-        let (a, b), r = if b > kb then remove_interval (a, b) r
-            else (a, b), r in
-        if cmp (add_num ka (-1), add_num kb 1) (a, b) = 0
-            then ((min a ka, max b kb), merge l r)
-            else ((a, b), bal l (ka, kb) r)
-    | Empty -> ((a, b), Empty)
-(* usuwam wszystkie przedziały, które będą nachodzić na przedział po dodaniu *)
-
-let rec add_acc x set =
-    let (x, set) = (remove_interval x set) in
-    add_one x set
-(* pomocnicze dodawanie, aby zachować porządek w kodzie:
-najpierw usuwam przedziały nachodzące, następnie dodaje konkretny przedzial *)
+           bal t1 k (let (_,set) = remove_min_elt t2 in set)
 
 let rec join l v r =
     match (l, r) with
-        | (Empty, _) -> add_acc v r
-        | (_, Empty) -> add_acc v l
+        | (Empty, _) -> add v r
+        | (_, Empty) -> add v l
         | (Node(ll, lv, lr, (lh,_)), Node(rl, rv, rr, (rh,_))) ->
             if lh > rh + 2 then bal ll lv (join lr v r) else
             if rh > lh + 2 then bal (join l v rl) rv rr else
                 make l v r
+
+and split x set =
+    let rec loop x = function
+        | Empty -> (Empty, false, Empty)
+        | Node (l, ((va, vb) as v), r, _) ->
+            let c = cmp (x,x) v in
+            if c = 0 then
+                ((if x > va then add (va, x - 1) l else l),
+                true,
+                (if x < vb then add (x + 1, vb) r else r))
+            else if c < 0 then
+                let (ll, pres, rl) = loop x l in (ll, pres, join rl v r)
+            else
+                let (lr, pres, rr) = loop x r in (join l v lr, pres, rr) in
+    loop x set
+
+and add (a, b) set =
+    let (l, presl, _) = split (a - 1) set in
+    let (_, presr, r) = split (b + 1) set in
+    let (a, l) = if presl then remove_max_elt l else a, l in
+    let (b, r) = if presr then remove_min_elt r else b, r in
+    join l (a, b) r
 
 (***********************
       KONSTRUKTORY      
@@ -132,7 +129,7 @@ let is_empty set = set = Empty
 let mem x set =
     let rec loop = function
         | Node (l, k, r, _) ->
-            let c = cmp (x,x) k in
+            let c = cmp (x, x) k in
             c = 0 || loop (if c < 0 then l else r)
         | Empty -> false in
     loop set
@@ -145,21 +142,6 @@ let elements set =
         | Node (l,k,r,_) -> loop (k :: loop acc r) l in
     loop [] set  
 
-let split x set =
-    let rec loop x = function
-        | Empty -> (Empty, false, Empty)
-        | Node (l, ((va, vb) as v), r, _) ->
-            let c = cmp (x,x) v in
-            if c = 0 then
-                ((if x > va then add_acc (va, x - 1) l else l),
-                true,
-                (if x < vb then add_acc (x + 1, vb) r else r))
-            else if c < 0 then
-                let (ll, pres, rl) = loop x l in (ll, pres, join rl v r)
-            else
-                let (lr, pres, rr) = loop x r in (join l v lr, pres, rr) in
-    loop x set
-
 let below x set =
     let (l,pres,_) = split x set in
     add_num (count l) (if pres then 1 else 0)
@@ -168,24 +150,11 @@ let below x set =
       MODYFIKATORY      
 ***********************)
 
-let add = add_acc
-
-let remove ((a,b) as x) set =
-    let rec loop = function
-        | Node (l, ((ka, kb) as k), r, _) ->
-            let c = cmp x k in
-            if c = 0 then
-                let r = if b > kb then loop r else r in
-                let l = if a < ka then loop l else l in
-                if (ka >= a && kb <= b) then merge l r else
-                if kb > b then join (if ka < a then add_acc (ka, a - 1) l else l) (b + 1, kb) r 
-                else join l (ka, a - 1) r
-            else if c < 0 then bal (loop l) k r else bal l k (loop r)
-        | Empty -> Empty in
-    loop set
-(* usuwam wsyzstkie przedziały, w przedziale do usunięcia i dodaje z powrotem te kawałki,
-które pozostaną po usunięciu części przedziału *)
-
+let remove (a,b) set =
+    let (l, _, _) = split a set in
+    let (_, _, r) = split b set in
+    merge l r
+    
 let iter f set =
     let rec loop = function
         | Empty -> ()
