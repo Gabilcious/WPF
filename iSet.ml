@@ -20,8 +20,6 @@ let count = function
     | Node (_, _, _, (_,c) ) -> c
     | Empty -> 0
 
-let neg x = if x = min_int then max_int else -x
-
 let add_num a b =
     let (a, b) = (min a b), (max a b) in
     if a >= 0 then
@@ -30,8 +28,15 @@ let add_num a b =
     else if b <= (min_int - a) then min_int else a + b
 (* dodawanie, aby nigdy nie przekroczyć wartości min_int i max_int *)
 
+let add_num2 a b czy_min_int =
+    if czy_min_int then
+        if a >= -2 then max_int
+        else -(min_int - a )
+    else add_num a b
+(* osobna funckja na dodawanie uwzględniająca min_int != max_int *)
+
 let make l ((a, b) as k) r = Node (l, k, r, (max (height l) (height r) + 1,
-    add_num (add_num (count l) (count r)) (add_num (add_num b (neg a))  1)) )
+    add_num (add_num (count l) (count r)) (add_num (add_num2 b (-a) (a = min_int))  1)) )
 
 let bal l k r =
     let hl = height l in
